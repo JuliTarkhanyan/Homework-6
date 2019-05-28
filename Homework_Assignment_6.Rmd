@@ -1,0 +1,214 @@
+---
+title: "HW6"
+author: 'Julieta Tarkhanyan'
+date: "April 28, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+<i>
+You are required to submit both Markdown and PDF files. Data set (Spam E-mail Data) relevant for this assignment can be found in the R package "DAAG". 
+</i>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(DAAG)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(dplyr)
+library(caret)
+```
+
+----------------------------------------
+Problem 1 (2 pt.)
+
+Consider the training examples shown in the table for a binary classification problem: <br>
+
+![](Capture.PNG)
+<p>
+a.  What is the best split (between a1 and a2) according to the classification error rate? Show calculations in R.
+b. What is the best split (between a1 and a2) according to the Gini index? Show calculations in R. Which attribute would the decision tree algorithm choose? Why?
+c. Why does not entropy start with 0?
+d. Why DT is called a greedy algorithm?
+
+a. The best split between a1 and a2 is a1, because it has 0.2 classification error rate
+b. The best split between a1 and a2 according to Gini index is a1, because it's value (0.34) is lower then a2's gini index (0.49). The decision tree agorithm would choose a1 as attribute because it has the lowest gini index and class. error rate.
+d. DT is called a greedy algorithm because after every split we apply the same techique to obtained smaller dataset
+
+```{r pr1}
+a1 <- c(1,1,1,0,0,0,0,1,0) 
+a2 <- c(1,1,0,0,1,1,0,0,1)
+targetclass <- c("+", "+", "-", "+", "-", "-", "-", "+", "-")
+
+a <- data.frame(a1,a2, targetclass)
+a
+
+table1 <- table(targetclass, a1)
+table1
+
+#class. error rate for a1
+a1_0sum <- sum(table1[, 1])/sum(table1)
+a1_1sum <- sum(table1[, 2])/sum(table1)
+
+
+a1_0 <- 1 - max(table1[1,1]/(sum(table1[, 1])), table1[2,1]/(sum(table1[, 1])))
+a1_0
+
+a1_1 <- 1 - max(table1[1,2]/(sum(table1[, 2])), table1[2,2]/(sum(table1[, 2])))
+a1_1
+
+weighted_rate_a1 <- a1_0sum * a1_0 + a1_1sum * a1_1
+
+weighted_rate_a1
+
+#class. error rate for a2
+
+table2 <- table(targetclass, a2)
+table2
+
+a2_0sum <- sum(table2[, 1]) / sum(table2)
+a2_1sum <- sum(table2[, 2]) / sum(table2)
+
+a2_0 <- 1 - max(table2[1,1]/(sum(table2[, 1])), table2[2,1]/(sum(table2[, 1])))
+a2_0
+
+a2_1 <- 1 - max(table2[1,2]/(sum(table2[, 2])), table2[2,2]/(sum(table2[, 2])))
+a2_1
+
+weighted_rate_a2 <- a2_0sum * a2_0 + a2_1sum * a2_1
+
+weighted_rate_a2
+
+
+#Gini index for a1
+a1_0weight1 <- table1[1,1]/sum(table1[, 1])
+a1_0weight2 <- table1[2,1]/sum(table1[, 1])
+a1_1weight1 <- table1[1,2]/sum(table1[, 2])
+a1_1weight2 <- table1[2,2]/sum(table1[, 2])
+a1_0_sum <- sum(table1[, 1]) / sum(table1)
+a1_1_sum <- sum(table1[, 2]) / sum(table1)
+
+gini_a1_0 <- 1 - a1_0weight1 ^ 2 - a1_0weight2 ^ 2
+gini_a1_0
+
+gini_a1_1 <- 1 - a1_1weight1 ^ 2 - a1_1weight2 ^ 2
+gini_a1_1
+
+weighted_gini_a1 <- gini_a1_0 * a1_0_sum + gini_a1_1 * a1_1_sum
+weighted_gini_a1
+  
+  
+  
+# gini index for a2                      
+a2_0weight1 <- table2[1,1]/sum(table2[, 1])
+a2_0weight2 <- table2[2,1]/sum(table2[, 1])
+a2_1weight1 <- table2[1,2]/sum(table2[, 2])
+a2_1weight2 <- table2[2,2]/sum(table2[, 2])
+a2_0_sum <- sum(table2[, 1]) / sum(table2)
+a2_1_sum <- sum(table2[, 2]) / sum(table2)
+
+gini_a2_0 <- 1 - a2_0weight1 ^ 2 - a2_0weight2 ^ 2
+gini_a2_0
+
+gini_a2_1 <- 1 - a2_1weight1 ^ 2 - a2_1weight2 ^ 2
+gini_a2_1
+
+weighted_gini_a2 <- gini_a2_0 * a2_0_sum + gini_a2_1 * a2_1_sum
+weighted_gini_a2
+
+
+
+
+
+
+```
+
+----------------------------------------
+
+
+Problem 2 (2 pt.)
+
+a. Suppose the sysadmin wants to understand and predict the process of recognizing the emails as spam for new e-mails which make up 10% of your initial data. Use the full decision tree algorithm to solve this task. Show your tree and interpret the results. <br>
+b. How many observations have your smallest node? Set the minimum number of observations in any terminal node 25% of the number of your initial data. Show the tree. Why do we need the arguments minbucket
+and minsplit?<br>
+c. Which are the advantages and disadvantages (at least 2 of each) of the DT algorithm? 
+
+a. Here the root node is bang, which is the number of occurrences of the ! symbol. If it is less then 0.08 than in then next step it checks if dollar is less then 0.088 and decide spam or not. In the other hand if bang is greater then 0.08 tree provides more levels to check to determine whether the email is spam or not.
+b. minbucket and minsplit control the size of the tree and it hepls to prevent from complicated trees
+c. advanatges are easy to understand, can handle NA, works quickly on large datasets, works on both umerical and categorical data.
+disadvantages are large trees can be hard to interprete, probability of overfitting is high
+
+----------------------------------------
+
+```{r pr2}
+spam7
+levels(spam7$yesno) <- c(0, 1)
+
+set.seed(123)
+index_train <- createDataPartition(spam7$crl.tot, p = 0.9, list = F)
+dim(spam7)
+spam_train <- spam7[index_train,]
+spam_test <- spam7[-index_train,]
+
+
+model_tree <- rpart(yesno ~., data = spam_train, method = "class")
+model_tree
+rpart.plot(model_tree)
+
+
+prp(model_tree)
+
+
+model_tree1 <- rpart(yesno ~., data = spam_train, method = "class", control = rpart.control(minbucket = nrow(spam7) * 0.25))
+prp(model_tree1)
+
+
+```
+
+Problem 3 (3 pt.)
+
+a. Make predictions based on both models.
+b. Compare the models using the function confusionMatrix() and their results, ROC curve, and AUC. Which does perform better? Why? 
+c. What is the difference between regression and classification trees (in terms of the loss function, prediction, and type of dependent variable)?
+
+b. In terms of accuracy first model provides better results, also ROC Curve is more accurate and AUC is greater in the case of 1st model.
+c. Regression trees are used when response variable is numeric or continous, thus they are used to solve prediction tasks. Classification trees are used when we need to classify the dataset into classes of response variable.There are also difference in algorithm. In regression trees target variable hasn't classes which means we fit model to the target variable. In each split sum of squared errors is calculated and with the lowest SSE choosed as first node. This procedure is continued recursively. In classification trees algorithm works on dataset homogeneisly. 
+
+```{r pr3}
+library(ROCR)
+pred1 <- predict(model_tree, spam_test, type = "class")
+table_pred <- confusionMatrix(spam_test$yesno, pred1)
+table_pred
+
+pred_roc <- predict(model_tree, spam_test, type = "prob")
+head(pred_roc)
+pred_test <- prediction(pred_roc[,2], spam_test$yesno)
+ROC1 <- performance(pred_test, "tpr", "fpr")
+plot(ROC1)
+performance(pred_test,"auc")@y.values
+
+
+pred2 <- predict(model_tree1, spam_test, type = "class")
+table_pred2 <- confusionMatrix(spam_test$yesno, pred2)
+table_pred2
+pred_roc1 <- predict(model_tree1, spam_test, type = "prob")
+head(pred_roc1)
+pred_test1 <- prediction(pred_roc1[,2], spam_test$yesno)
+ROC2 <- performance(pred_test1, "tpr", "fpr")
+plot(ROC2)
+performance(pred_test1,"auc")@y.values
+
+
+```
+
+Bonus 1 (1 pt.)
+
+Bring an example of a data set that cannot be partitioned effectively by a DT algorithm using test conditions involving only a single attribute. How can you overcome this difficulty?
+ 
+
+Bonus 2 (1 pt.)
+
+How to calculate the out-of-bag error rate.
+What is the difference between out-of-bag error and test error in Random Forest?
